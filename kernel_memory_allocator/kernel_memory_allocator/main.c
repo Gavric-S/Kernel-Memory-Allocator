@@ -5,7 +5,7 @@
 #include "slab.h"
 #include "test.h"
 
-#define BLOCK_NUMBER (1000)
+#define BLOCK_NUMBER (1025)
 #define THREAD_NUM (5)
 #define ITERATIONS (1000)
 
@@ -86,8 +86,10 @@ int main() {
 
 	kmem_cache_destroy(shared);
 	free(space);*/
-	void* addr = kmem_buddy_alloc_mem(7);
-	kmem_buddy_dealloc_mem(addr, 7);
+	void* addr = kmem_buddy_alloc_mem(2);
+	printf("adresa dodeljene memorije: %p\n", addr);
+
+	kmem_buddy_dealloc_mem(addr, 2);
 	printf("\n");
 	print_buddy_ptr_list();
 	return 0;

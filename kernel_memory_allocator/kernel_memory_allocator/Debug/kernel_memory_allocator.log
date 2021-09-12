@@ -1,24 +1,40 @@
 ﻿  buddy.c
-D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(76,44): warning C4133: 'function': incompatible types - from 'kmem_cache_t *' to 'char *'
-D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(78,29): warning C4133: 'function': incompatible types - from 'kmem_cache_t *' to 'char *'
-D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(78,45): warning C4047: '!=': 'unsigned int' differs in levels of indirection from 'char *'
-D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(78,74): warning C4133: 'function': incompatible types - from 'kmem_cache_t *' to 'char *'
-D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(78,89): warning C4047: '!=': 'unsigned int' differs in levels of indirection from 'char *'
-D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(76,1): warning C4047: 'initializing': 'char *' differs in levels of indirection from 'unsigned int'
-D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(92,20): warning C4090: '=': different 'const' qualifiers
-D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(119,28): warning C4244: 'function': conversion from 'short' to 'char', possible loss of data
-D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(124,28): warning C4244: 'function': conversion from 'short' to 'char', possible loss of data
-D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(150,85): warning C4554: '<<': check operator precedence for possible error; use parentheses to clarify precedence
-D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(150,1): warning C4133: 'initializing': incompatible types - from 'char *' to 'buddy_free_t *'
-D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(179,35): warning C4244: 'function': conversion from 'unsigned short' to 'char', possible loss of data
-D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(297,39): warning C4554: '&': check operator precedence for possible error; use parentheses to clarify precedence
-D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(362,8): warning C4013: 'strcat' undefined; assuming extern returning int
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(12,34): warning C4018: '<': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(21,49): warning C4133: 'function': incompatible types - from 'uint8_t *' to 'kmem_cache_t *'
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(26,31): warning C4018: '>': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(68,30): warning C4018: '<': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(70,27): warning C4018: '>': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(76,30): warning C4018: '<': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(81,28): warning C4028: formal parameter 1 different from declaration
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(81,44): warning C4028: formal parameter 2 different from declaration
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(83,38): warning C4133: 'function': incompatible types - from 'uint16_t *' to 'const char *'
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(83,75): warning C4244: '=': conversion from 'uint16_t' to 'uint8_t', possible loss of data
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(84,30): warning C4133: 'function': incompatible types - from 'uint16_t *' to 'const char *'
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(121,37): warning C4090: 'function': different 'const' qualifiers
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(145,25): warning C4018: '<': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(146,22): warning C4018: '>': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(172,25): warning C4018: '<': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(177,28): warning C4244: 'function': conversion from 'uint16_t' to 'uint8_t', possible loss of data
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(182,28): warning C4244: 'function': conversion from 'uint16_t' to 'uint8_t', possible loss of data
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(196,41): warning C4018: '<': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(206,18): warning C4018: '>': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(206,48): warning C4018: '>=': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(208,88): warning C4554: '<<': check operator precedence for possible error; use parentheses to clarify precedence
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(208,1): warning C4133: 'initializing': incompatible types - from 'uint8_t *' to 'buddy_free_t *'
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(227,25): warning C4018: '<': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(242,35): warning C4244: 'function': conversion from 'uint16_t' to 'uint8_t', possible loss of data
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(243,67): warning C4244: 'function': conversion from 'uint16_t' to 'uint8_t', possible loss of data
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(345,39): warning C4554: '&': check operator precedence for possible error; use parentheses to clarify precedence
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(453,1): warning C4090: 'initializing': different 'const' qualifiers
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(487,21): warning C4018: '<': signed/unsigned mismatch
   main.c
 D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\main.c(23,20): warning C4018: '<': signed/unsigned mismatch
   slab.c
-D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\slab.c(118,1): warning C4090: 'initializing': different 'const' qualifiers
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\slab.c(4,22): warning C4142: 'block_num_': benign redefinition of type
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.h(15): message : see declaration of 'block_num_'
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\slab.c(6,39): warning C4028: formal parameter 1 different from declaration
   test.c
   Generating Code...
-D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(82): warning C4715: 'kmem_cache_create_buddy': not all control paths return a value
-D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(365): warning C4172: returning address of local variable or temporary: name
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\slab.c(48): warning C4716: 'kmalloc': must return a value
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(530): warning C4172: returning address of local variable or temporary: name
   kernel_memory_allocator.vcxproj -> D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\Debug\kernel_memory_allocator.exe
