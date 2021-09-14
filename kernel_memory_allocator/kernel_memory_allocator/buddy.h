@@ -11,6 +11,8 @@
 /* simbolicke konstante */
 #define MAX_NAME_LENGTH 30
 #define MIN_SLOTS_PER_SLAB 64
+#define SLOT_FREE 170
+#define SLOT_TAKEN 85
 
 // kodovi gresaka
 #define NO_ERROR 0
@@ -24,7 +26,7 @@ uint32_t block_num_; // velicina prostora za kmem allocator u blokovima
 // adresa cache-a cache-eva
 #define master_cache_addr_ (kmem_cache_t*)((buddy_free_t*)space_ + exp_(block_num_) + 1)
 // objekat kriticne sekcije
-//#define critical_section_ ((uint8_t*)((buddy_free_t*)space_ + exp_(block_num_) + 1) + sizeof(kmem_cache_t)
+#define critical_section_ ((uint8_t*)((buddy_free_t*)space_ + exp_(block_num_) + 1) + sizeof(kmem_cache_t))
 
 inline uint32_t exp_(); // najveci stepen velicine buddy parnjaka
 inline void* avail_space_(); // pocetak prostora raspolozivog za buddy alokaciju
@@ -38,7 +40,7 @@ typedef struct kmem_slab_s { // slab
 	size_t slot_size; // velicina slot-a
 	uint32_t slot_count; // broj slot-ova
 	uint32_t taken_count; // broj zauzetih slot-ova
-	void* free; // problem oko slucaja kada je sama velicina free pokazivaca veca od slot-a moze se resiti tako sto bi min slot_size bio 4B
+/*	void* free;*/ // problem oko slucaja kada je sama velicina free pokazivaca veca od slot-a moze se resiti tako sto bi min slot_size bio 4B
 	struct kmem_slab_s* next; // sledeci slab
 } kmem_slab_t;
 
@@ -108,6 +110,8 @@ int kmem_cache_error_impl(kmem_cache_t*);
 /* cache i slab funkcije */
 // alokacija objekta u datom slab-u datog cache-a
 void* kmem_cache_alloc_obj(kmem_cache_t*, kmem_slab_t*);
+// alokacija objekta u datom slab-u datog cache-a
+void kmem_cache_free_obj(void*, kmem_slab_t*, kmem_slab_t*);
 // inicijalizacija cache-a
 void kmem_cache_init(kmem_cache_t*, const uint8_t*, size_t, void(*)(void *), void(*)(void *));
 // inicijalizacija slab-a
@@ -124,6 +128,10 @@ uint8_t object_in_cache(kmem_cache_t*, void*, size_t);
 uint8_t object_in_slab(kmem_slab_t*, void*, size_t);
 // azuriranje procenta popunjenosti cache-a
 void update_percentage_full(kmem_cache_t*);
+// pronalazak slobodnog slot-a u slab-u
+void* kmem_slab_find_free_slot(kmem_slab_t*);
+// uklanjanje slab-a iz liste slab-ova
+uint8_t kmem_slab_remove_from_list(kmem_slab_t*, kmem_slab_t**);
 
 /* helper-i */
 // racunanje eksponenta stepena dvojke koji je jednak datom broju
