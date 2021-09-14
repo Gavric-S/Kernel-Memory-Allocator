@@ -1,72 +1,10 @@
 #include "buddy.h"
 #include "slab.h"
 
-void kmem_init_impl(void *space, uint32_t block_num) {
-	if (space < 0 || block_num <= 0) return;
-	space_ = space;
-	block_num_ = block_num;
-
-	// racunanje duzine liste pokazivaca na slobodne delove memorije buddy sistema...
-	uint16_t free_buddy_length = 0;
-	uint16_t leftover_space_blocks;
-	while ((1 << free_buddy_length) < block_num) free_buddy_length++;
-
-	// racunanje offset-a od pocetka dodeljene memorije space na kom ce se nalaziti gorepomenuta lista...
-	// TODO: mozda ovde uracunati i jos neke strukture pored buddy pokazivaca...
-	uint32_t offset_bytes = free_buddy_length * sizeof(buddy_free_t);
-
-	printf("velicina jednog cache-a: %d\n", sizeof(kmem_cache_t));
-	offset_bytes += /*2 * */sizeof(kmem_cache_t); // TODO ako menjas ovde moras i u inline funkcijama
-	// TODO: inicijalizacija dva cache objekta:
-	kmem_cache_init((uint8_t*)space_ + offset_bytes, "CACHES", sizeof(kmem_cache_t), NULL, NULL);
-	// kmem_cache_init((uint8_t*)space_ + offset_bytes + sizeof(kmem_cache_t), "BUFFER_CACHES", sizeof(kmem_cache_t), NULL, NULL);
-
-	uint32_t offset_blocks = offset_bytes / BLOCK_SIZE + (offset_bytes % BLOCK_SIZE) ? 1 : 0;;
-	block_num -= offset_blocks;
-	if ((1 << free_buddy_length) > block_num) free_buddy_length--;
-	// exp_ = free_buddy_length;
-	leftover_space_blocks = block_num - (1 << free_buddy_length);
-
-	// avail_space_ = (uint8_t*)space + offset_blocks * BLOCK_SIZE;
-
-	// inicijalizacija liste pokazivaca na slobodne delove memorije buddy sistema...
-	for (uint32_t i = 0; i < free_buddy_length; i++) ((buddy_free_t*)space_ + i)->free = NULL;
-	((buddy_free_t*)space_ + free_buddy_length)->free = ((buddy_free_t*)avail_space_());
-	((buddy_free_t*)avail_space_())->free = NULL;
-	// azuriranje liste pokazivaca memorijom koja je iza memorije obuhvacene najvecim stepenom dvojke...
-	void* leftover_space_pointer = (uint8_t*)avail_space_() + (1 << free_buddy_length) * BLOCK_SIZE;
-	while (leftover_space_blocks > 0) {
-		uint16_t exponent = 0;
-		while ((1 << exponent) < leftover_space_blocks) exponent++;
-		if ((1 << exponent) > leftover_space_blocks) exponent--;
-		leftover_space_blocks -= (1 << exponent);
-		((buddy_free_t*)leftover_space_pointer)->free = ((buddy_free_t*)space_ + exponent)->free;
-		((buddy_free_t*)space_ + exponent)->free = leftover_space_pointer;
-		leftover_space_pointer = (uint8_t*)leftover_space_pointer + (1 << exponent) * BLOCK_SIZE;
-	}
-
-	//for (uint32_t i = 0; i <= free_buddy_length; i++) {
-	//	buddy_free_t* curr = ((buddy_free_t*)space_ + i)->free;
-	//	while (curr != NULL) {
-	//		printf("%p\t", curr);
-	//		curr = curr->free;
-	//	}
-	//	if (curr == NULL) printf("NULL!\n");
-	//}
-	printf("\n");
-	print_buddy_ptr_list();
-	printf("\n");
-
-	// markiranje pozicije prvog kesa kao prazne (pod pretpostavkom da ima mesta u prvom bloku za bar taj jedan cache):
-	// treba korigovati!
-	//((kmem_cache_t*)((buddy_free_t*)space + free_buddy_length))->name = NULL; // glava cache liste objekata
-	//(((kmem_cache_t*)((buddy_free_t*)space + free_buddy_length)) + 1)->name = NULL; // glava cache liste bafera
-}
-
 uint32_t exp_() {
 	uint16_t max_buddy_exp = 0;
 	while ((1 << max_buddy_exp) < block_num_) max_buddy_exp++;
-	uint32_t offset_blocks = (max_buddy_exp * sizeof(buddy_free_t) + /*2 * */sizeof(kmem_cache_t)) / BLOCK_SIZE + 1;
+	uint32_t offset_blocks = (max_buddy_exp * sizeof(buddy_free_t) + sizeof(kmem_cache_t)) / BLOCK_SIZE + 1;
 	if ((1 << max_buddy_exp) > block_num_ - offset_blocks) max_buddy_exp--;
 	return max_buddy_exp;
 }
@@ -74,122 +12,100 @@ uint32_t exp_() {
 inline void* avail_space_() {
 	uint16_t max_buddy_exp = 0;
 	while ((1 << max_buddy_exp) < block_num_) max_buddy_exp++;
-	uint32_t offset_blocks = (max_buddy_exp * sizeof(buddy_free_t) + /*2 * */sizeof(kmem_cache_t)) / BLOCK_SIZE + 1;
+	uint32_t offset_blocks = (max_buddy_exp * sizeof(buddy_free_t) + sizeof(kmem_cache_t)) / BLOCK_SIZE + 1;
 	return (uint8_t*)space_ + offset_blocks * BLOCK_SIZE;
-}
-
-void kmem_cache_init(void* addr, uint16_t* name, size_t data_size, void(*ctor)(void*), void(*dctor)(void*)) { // TODO provera treba da se radi u funkcijama pozivaocima?
-	kmem_cache_t* cache_addr = addr;
-	for (uint32_t i = 0; i < strlen(name); i++) cache_addr->name[i] = name[i];
-	cache_addr->name[strlen(name)] = '\0';
-	cache_addr->data_size = data_size;
-	cache_addr->slabs_empty = NULL;
-	cache_addr->slabs_half_full = NULL;
-	cache_addr->slabs_full = NULL;
-	cache_addr->ctor = ctor;
-	cache_addr->dctor = dctor;
-	// TODO...
-	// slab_size... (koliko blokova)
-}
-
-kmem_cache_t* kmem_cache_create_impl(const uint8_t*name, size_t size, void(*ctor)(void *), void(*dctor)(void *)) {
-	//if (!name || size < 1) return NULL;
-	//kmem_cache_t* cache_head = _get_object_cache_head_;
-	//uint32_t valid_code = is_cache_valid(NULL);
-
-	//if (valid_code & NO_OBJECT_CACHE_HEAD) {
-	//	// kmem_cache_init(cache_head, name, size, ctor, dctor); 
-	//	printf("nema\n");
-	//} 
-	//else {
-	//	printf("ima\n");
-	//	kmem_cache_t* cache_prev = NULL;
-	//	while (cache_head != NULL) {
-	//		cache_prev = cache_head;
-	//		cache_head = cache_head->next_cache;
-	//	}
-	//	// provera da li ima mesta u ovom bloku za novi kes...
-	//	uint8_t* block_prev = _get_block_(cache_prev);
-	//	cache_prev++;
-	//	if (_get_block_(cache_prev) != block_prev || _get_block_(cache_prev + 1) != block_prev) cache_prev = kmem_buddy_alloc_mem(1); // nema..
-	//	// kmem_cache_init(cache_prev, name, size, ctor, dctor);
-	//}
-	// TODO: izracunati velicinu neiskoriscenog prostora
-
-	kmem_cache_t* master_cache_ptr = master_cache_;
-	void* new_cache_ptr = kmem_cache_alloc_impl(master_cache_ptr);
-	kmem_cache_init(new_cache_ptr, name, size, ctor, dctor);
-	return new_cache_ptr;
-	// TODO: obraditi izuzetne slucajeve...
-}
-
-void* kmem_cache_alloc_impl(kmem_cache_t* cache_ptr) {
-	//uint32_t valid_code = is_cache_valid(cache_ptr);
-	//if (!(valid_code & VALID_OBJECT_CACHE)) return NULL;
-	// TODO: provera validnosti adrese cache-a...
-
-	void* object_ptr = NULL;
-	if (cache_ptr->slabs_half_full) object_ptr = kmem_cache_alloc_obj(cache_ptr, cache_ptr->slabs_half_full, cache_ptr->ctor); // postoji polupopunjen slab
-	else if (cache_ptr->slabs_empty) object_ptr = kmem_cache_alloc_obj(cache_ptr, cache_ptr->slabs_half_full, cache_ptr->ctor); // postoji prazan slab
-	else { // potrebno alocirati novi slab
-		kmem_slab_t* new_slab = kmem_buddy_alloc_mem(cache_ptr->slab_size / BLOCK_SIZE + (cache_ptr->slab_size % BLOCK_SIZE) ? 1 : 0);
-		if (!new_slab) return NULL;  // nemoguce alocirati novi slab
-		kmem_slab_init(new_slab, cache_ptr);
-		object_ptr = kmem_cache_alloc_obj(cache_ptr, new_slab, cache_ptr->ctor);
-	}
-	return object_ptr;
-}
- 
-uint16_t max_exp(uint32_t block_num) {
-	uint16_t exponent = 0;
-	while ((1 << exponent) < block_num) exponent++;
-	if ((1 << exponent) > block_num) exponent--;
-	return exponent;
-}
-
-void kmem_init_cache(kmem_cache_t* cache, const uint8_t*name, size_t size, void(*ctor)(void *), void(*dctor)(void *)) {
-	// cache->name = name;
-	cache->data_size = size;
-	cache->ctor = ctor;
-	cache->dctor = dctor;
-	cache->slabs_empty = NULL;
-	cache->slabs_full = NULL;
-	cache->slabs_half_full = NULL;
-	cache->expanded = 0;
-	cache->blk_count = 0; //.
-	cache->slab_count = 0;
-	cache->slab_size = BLOCK_SIZE; 
-	cache->slot_count = (BLOCK_SIZE - sizeof(kmem_slab_t)) / size;
-	cache->perc_full = 0; //.
-	cache->next_cache = NULL;
-	cache->prev_cache = NULL;
 }
 
 void* kmem_buddy_alloc_mem(uint32_t block_num) {
 	if (block_num < 1) return NULL;
 
+	// izracunaj eksponent chunk-a
 	uint16_t exponent = 0;
 	while ((1 << exponent) < block_num) exponent++;
 
 	uint16_t i = 0;
-	if (!found_free_space(exponent, &i)) return NULL;
+	if (!found_free_space(exponent, &i)) return NULL; // nema slobodnog prostora za alokaciju
 
+	// pokusaj direktne alokacije(bez cepanja chunk-ova)
 	void* ret = direct_alloc(i, block_num);
 	if (ret) {
-		print_buddy_ptr_list();
 		return ret;
 	}
+	// alokacija sa cepanjem
 	else ret = disjoin_alloc(i, block_num);
 
+	// TODO: ukloniti
+	printf("alocirana memorija.\n");
 	printf("adresa: %p\n", ret);
-	print_buddy_ptr_list();
+	print_buddy_free_chunk_ptr_list();
 	return ret;
 }
 
-uint8_t found_free_space(uint16_t exponent, uint16_t*i) {
+uint32_t kmem_buddy_free_mem(void* target, uint32_t block_num) {
+	// dodaj adresu mete u listu
+	uint16_t exponent = 0;
+	while ((1 << exponent) < block_num) exponent++;
+
+	if (!chunk_buddy_is_valid(target, exponent)) return 0; // invalidan chunk (adresa ili velicina)
+	if (in_list(target, exponent)) return 0; // vec slobodan chunk
+
+	// dohvati parnjaka:
+	void* buddy = get_buddy(target, exponent);
+	if (!buddy) { // ukoliko nema parnjaka samo oslobodi chunk na datoj adresi
+		attach_to_list(((buddy_free_t*)space_ + exponent), target);
+	}
+
+	// spajaj slobodne parnjake dok god mozes
+	while (buddy && in_list(buddy, exponent)) {
+		// izbacivanje parnjaka iz liste slobodnih chunk-ova
+		detach_from_list(buddy, exponent);
+		// ukoliko je chunk u listi i on se izbacuje
+		if (in_list(target, exponent)) detach_from_list(target, exponent);
+		// target pokazuje na nizeg parnjaka
+		if (target > buddy) target = buddy;
+		// dodavanje spojenih parnjaka u listu pokazivaca na vece chunk-ove
+		attach_to_list(((buddy_free_t*)space_ + exponent + 1), target);
+		// dohvati parnjaka veceg chunk-a
+		buddy = get_buddy(target, exponent + 1);
+		exponent++;
+	}
+
+	// TODO: ukloniti
+	printf("dealocirana memorija.\n");
+	print_buddy_free_chunk_ptr_list();
+	return block_num;
+}
+
+uint8_t found_free_space(uint16_t exponent, uint16_t* i) {
 	for (; *i <= exp_(); (*i)++)
 		if (((buddy_free_t*)space_ + *i)->free != NULL && *i >= exponent) return 1;
 	return 0;
+}
+
+uint32_t offset_bytes(void* addr) {
+	uint8_t* relative_mem_start = avail_space_();
+	uint8_t* overflow_mem_start = (uint8_t*)avail_space_() + ((1 << exp_()) * BLOCK_SIZE);
+	if ((uint8_t*)addr > overflow_mem_start) relative_mem_start = overflow_mem_start; // ukoliko adresa pripada delu memorije posle najveceg-
+	// stepena buddy sistema pomeri relativni pocetak memorije na taj deo
+
+	return (uint8_t*)addr - (uint8_t*)relative_mem_start;
+}
+
+uint8_t chunk_is_in_bounds(void* addr, uint32_t exp) {
+	if (addr < space_) return 1;
+	if ((uint8_t*)addr + (1 << exp) * BLOCK_SIZE <= (uint8_t*)space_ + block_num_ * BLOCK_SIZE) return 1;
+	return 0;
+}
+
+uint8_t chunk_buddy_is_valid(void* addr, uint32_t exp) {
+	// da li je adresa uopste u okviru memorije
+	if (!chunk_is_in_bounds(addr, exp)) return 0;
+
+	// da li je udaljen ceo broj blokova stepenovanih eksponentom od pocetka memorije
+	uint32_t offset_blocks = offset_bytes(addr) / BLOCK_SIZE;
+	if (offset_blocks % (1 << exp) != 0) return 0;
+
+	return 1;
 }
 
 void* direct_alloc(uint8_t i, uint32_t block_num) {
@@ -216,55 +132,15 @@ void* disjoin_alloc(uint8_t i, uint32_t block_num) {
 		((buddy_free_t*)space_ + i - 1)->free = lower;
 		i--;
 	}
-	if (!lower) {} // TODO ali ni ne treba mi ovo jer su sve ostale provere vec odradjene
+	if (!lower) return NULL; // ovaj slucaj nije moguc zbog prethodnih provera
 	else ((buddy_free_t*)space_ + i)->free = lower->free;
 	return lower;
 }
 
-uint32_t kmem_buddy_dealloc_mem(void* target, uint32_t block_num) { // vraca broj oslobodjenih blokova
-	// dodaj adresu mete u listu
-	uint16_t exponent = 0;
-	while ((1 << exponent) < block_num) exponent++;
-
-	// invalidan chunk
-	if (!chunk_buddy_is_valid(target, exponent)) return 0;
-	// vec slobodan
-	if (in_list(target, exponent)) return 0;
-
-	// dohvati parnjaka:
-	void* buddy = get_buddy(target, exponent);
-	if (!buddy) { // ukoliko nema parnjaka samo oslobodi chunk na datoj adresi
-		attach_to_list(((buddy_free_t*)space_ + exponent), target);
-	}
-
-	// spajaj slobodne parnjake dok god mozes
-	while (buddy && in_list(buddy, exponent)) {
-		detach_from_list(buddy, exponent);
-		if (in_list(target, exponent)) detach_from_list(target, exponent);
-		if (target > buddy) target = buddy;
-		attach_to_list(((buddy_free_t*)space_ + exponent + 1), target);
-		buddy = get_buddy(target, exponent + 1);
-		exponent++;
-	}
-
-	return block_num;
-}
-
-uint8_t chunk_buddy_is_valid(void* addr, uint32_t exp) {
-	// da li je adresa uopste u okviru memorije
-	if (!chunk_is_in_bounds(addr, exp)) return 0;
-
-	// da li je udaljen ceo broj blokova stepenovanih eksponentom od pocetka memorije
-	uint32_t offset_blocks = addr_offset_bytes(addr) / BLOCK_SIZE;
-	if (offset_blocks % (1 << exp) != 0) return 0;
-
-	return 1;
-}
-
-void* get_buddy(void* addr, uint32_t exp) { // TODO: moguce da nema parnjaka - pokriti...
+void* get_buddy(void* addr, uint32_t exp) {
 	if (exp > exp_()) return NULL;
 
-	uint32_t offset_blocks = addr_offset_bytes(addr) / BLOCK_SIZE;
+	uint32_t offset_blocks = offset_bytes(addr) / BLOCK_SIZE;
 
 	void* buddy = NULL;
 	if (offset_blocks % (1 << exp) == 0) { // ja sam donji parnjak
@@ -277,37 +153,23 @@ void* get_buddy(void* addr, uint32_t exp) { // TODO: moguce da nema parnjaka - p
 	return NULL;
 }
 
-uint32_t addr_offset_bytes(void* addr) {
-	uint8_t* relative_mem_start = avail_space_();
-	uint8_t* overflow_mem_start = (uint8_t*)avail_space_() + ((1 << exp_()) * BLOCK_SIZE); /* TODO ovo mozda bude problematicno */
-	if ((uint8_t*)addr > overflow_mem_start) relative_mem_start = overflow_mem_start;
-
-	return (uint8_t*)addr - (uint8_t*)relative_mem_start;
-}
-
-uint8_t chunk_is_in_bounds(void* addr, uint32_t exp) {
-	if (addr < space_) return 1;
-	if ((uint8_t*)addr + (1 << exp) * BLOCK_SIZE <= (uint8_t*)space_ + block_num_ * BLOCK_SIZE) return 1;
-	return 0;
-}
-
-uint8_t in_list(buddy_free_t *buddy, uint32_t exponent) { // TODO
+uint8_t in_list(buddy_free_t* buddy, uint32_t exponent) {
 	buddy_free_t* curr = ((buddy_free_t*)space_ + exponent)->free;
-	while (curr) { 
-		if (curr == buddy) return 1; 
+	while (curr) {
+		if (curr == buddy) return 1;
 		curr = curr->free;
 	}
 	return 0;
 }
 
-void detach_from_list(buddy_free_t *target, uint8_t exponent) {
+void detach_from_list(buddy_free_t* target, uint8_t exponent) {
 	buddy_free_t* head = ((buddy_free_t*)space_ + exponent);
 	if (head->free == target) {
 		head->free = target->free;
 		target->free = NULL;
 		return;
 	}
-	buddy_free_t *prev = head->free, *curr = prev->free;
+	buddy_free_t* prev = head->free, * curr = prev->free;
 	while (curr) {
 		if (curr == target) {
 			prev->free = target->free;
@@ -318,220 +180,12 @@ void detach_from_list(buddy_free_t *target, uint8_t exponent) {
 	}
 }
 
-void attach_to_list(buddy_free_t *head, buddy_free_t *target) {
+void attach_to_list(buddy_free_t* head, buddy_free_t* target) {
 	target->free = head->free;
 	head->free = target;
 }
- 
-uint32_t is_cache_valid(kmem_cache_t* cache) {
-	uint32_t ret = 0;
-	kmem_cache_t* current = master_cache_;
-	if (current->name == NULL) { 
-		ret |= NO_OBJECT_CACHE_HEAD; 
-		current = NULL;
-	}
-	while (current) {
-		if (current == cache) {
-			ret |= VALID_OBJECT_CACHE;
-			break;
-		}
-		current = current->next_cache;
-	}
-	current = master_cache_;
-	if (current->name == NULL) {
-		ret |= NO_BUFFER_CACHE_HEAD;
-		current = NULL;
-	}
-	while ((ret & VALID_OBJECT_CACHE == 0) && current) {
-		if (current == cache) {
-			ret |= VALID_BUFFER_CACHE;
-			break;
-		}
-		current = current->next_cache;
-	}
-	return ret;
-}
 
-//void* kmem_allocate_slab(size_t size) {
-//	if (size < 1) return NULL;
-//	uint32_t blocks = size / BLOCK_SIZE + (size % BLOCK_SIZE) ? 1 : 0;
-//	return kmem_buddy_alloc_mem(blocks);
-//}
-
-uint32_t kmem_deallocate_slab(kmem_slab_t* target) {
-	uint32_t block_num = (target->slot_count * target->slot_size + sizeof(kmem_slab_t)) / BLOCK_SIZE; // ovo bi trebalo da bude deljivo (ako nije greska!) TODO proveriti
-	return kmem_buddy_dealloc_mem(target, block_num);
-}
-
-
-void* kmem_cache_alloc_obj(kmem_cache_t* cache, kmem_slab_t* slab, void(*ctor)(void *)) {
-	void* addr = slab->free;
-	slab->free = *((void**)slab->free); // TODO: sta se ovde zapravo zbiva..
-	slab->taken_count++;
-	if (ctor) ctor(addr);
-	if (cache->slabs_half_full == slab) { // bio slab polupun
-		if (!slab->free) { // ako je slab sada pun
-			cache->slabs_half_full = slab->next;
-			slab->next = cache->slabs_full;
-			cache->slabs_full = slab;
-		}
-	}
-	else { // slab bio prazan, sada polupun
-		cache->slabs_empty = slab->next;
-		slab->next = cache->slabs_half_full;
-		cache->slabs_half_full = slab;
-	}
-	return addr;
-}
-
-void kmem_cache_free_impl(kmem_cache_t *cache_ptr, void *object_ptr) {
-	//uint32_t valid_code = is_cache_valid(cache_ptr);
-	//if (valid_code & VALID_OBJECT_CACHE) return;
-	// TODO: provera validnosti adrese cache-a...
-
-	// nadji slab u kom se nalazi
-	uint8_t* slot_ptr = NULL;
-	uint8_t found = 0;
-	// full obilazak
-	kmem_slab_t* current_full = cache_ptr->slabs_full;
-	while (current_full) {
-		slot_ptr = ((uint8_t*)(current_full + 1));
-		for (uint32_t i = 0; i < current_full->slot_count; i++) {
-			if (slot_ptr + current_full->slot_size * i == object_ptr) {
-				found = 1;
-				break;
-			}
-		}
-		if (found) break;
-		current_full = current_full->next;
-	}
-	// half-full obilazak
-	kmem_slab_t* current_half_full = NULL;
-	if (found == 0) {
-		current_half_full = cache_ptr->slabs_half_full;
-		while (current_half_full) {
-			slot_ptr = ((uint8_t*)(current_half_full + 1));
-			for (uint32_t i = 0; i < current_half_full->slot_count; i++) {
-				if (slot_ptr + current_half_full->slot_size * i == object_ptr) {
-					found = 2;
-					break;
-				}
-			}
-			if (found) break;
-			current_half_full = current_half_full->next;
-		}
-	}
-	if (found == 1) { // u punom slab-u
-		((kmem_slab_t*)slot_ptr)->free /*slot_ptr*/ = *((void**)current_full->free); // TODO: ovo nije dobro sigurno jer nista ne upisujem u memoriju...
-		// ali sta ako je je sam objekat ovde manji od 4 bajta? onda necu moci da stavljam free pokazivac u sam slot???
-		current_full->free = ((void*)slot_ptr); //
-		current_full->taken_count--;
-		// prebacivanje u polupune
-		cache_ptr->slabs_full = current_full->next;
-		current_full->next = cache_ptr->slabs_half_full;
-		cache_ptr->slabs_half_full = current_full;
-	}
-	else if (found == 2) { // u polupunom slab-u
-		((kmem_slab_t*)slot_ptr)->free = *((void**)current_half_full->free); // TODO proveriti obavezno // TODO ovde namestio sada
-		current_half_full->free = ((void*)slot_ptr); //
-		current_half_full->taken_count--;
-		// prebacivanje u empty
-		if (current_half_full->taken_count == 0) {
-			cache_ptr->slabs_half_full = current_half_full->next;
-			current_half_full->next = cache_ptr->slabs_empty;
-			cache_ptr->slabs_empty = current_half_full;
-		}
-	}
-	// ukoliko nisi nasao slab samo se vrati
-	return;
-}
-
-void* kmalloc_impl(size_t size) {
-	uint32_t exp = max_exp(size);
-	if ((1 << exp) != size) return NULL; // ???
-	if (exp < 5 || exp > 17) return NULL;
-	char* name = generate_buffer_name(size, exp);
-	// printf("%s", name);
-	// alociranje kesa
-	kmem_cache_t* buffer_cache = search_by_cache_name(master_cache_, name);
-	if (!buffer_cache) { // vec postoji odgovarajuci cache
-		buffer_cache = kmem_cache_create_impl(name, size, NULL, NULL);
-		if (!buffer_cache) return NULL;
-	}
-	return kmem_cache_alloc_impl(buffer_cache);
-	//uint32_t valid_code = is_cache_valid(cache_curr);
-	//if (valid_code & NO_BUFFER_CACHE_HEAD) {
-	//	// kreiraj novi kes na mestu cache_head-a...
-	//	// napravi mu jedan slab u koji ces staviti ovaj buffer...
-
-	//}
-	//else if (!(valid_code & VALID_BUFFER_CACHE)) {
-	//	// kreiraj novi kes...
-	//	// napravi mu jedan slab u koji ces staviti ovaj buffer...
-	//}
-	//else {
-	//	// stavi bafer u cache...
-	//}
-}
-
-void kfree_impl(const void* objp) {
-	kmem_cache_t* cache_curr = master_cache_;
-	int valid_code = is_cache_valid(cache_curr);
-	if (valid_code & NO_BUFFER_CACHE_HEAD) return;
-	int found = 0;
-	char* slot_ptr = NULL;
-	while (cache_curr) {
-		// if ()...
-		kmem_slab_t* current_full = cache_curr->slabs_full;
-		slot_ptr = ((char*)(current_full + 1));
-		for (int i = 0; i < current_full->slot_count; i++) {
-			if (slot_ptr + current_full->slot_size * i == objp) {
-				found = 1;
-				break;
-			}
-		}
-		if (found) break;
-		current_full = current_full->next;
-	}
-}
-
-void* search_by_cache_name(kmem_cache_t* cache, char* name) {
-	return NULL; // TODO: implementirati
-}
-
-void kmem_slab_init(kmem_slab_t* slab_ptr, kmem_cache_t* cache_ptr) {
-	// inicijalizacija polja slab-a
-	slab_ptr->slot_size = cache_ptr->data_size;
-	slab_ptr->slot_count = cache_ptr->slot_count;
-	slab_ptr->taken_count = 0;
-	
-	// TODO TESTIRAJ!
-	// inicijalizacija liste free
-	slab_ptr->free = (void*)(slab_ptr + 1);
-	for (uint32_t i = 0; i < slab_ptr->slot_count - 1; i++)
-		*(void**)((uint8_t*)slab_ptr->free + i * slab_ptr->slot_size) = (uint8_t*)slab_ptr->free + (i + 1) * slab_ptr->slot_size;
-	*(void**)((uint8_t*)slab_ptr->free + (slab_ptr->slot_count /*- 1*/) * slab_ptr->slot_size) = NULL;
-
-	// azuriranje lista
-	slab_ptr->next = cache_ptr->slabs_empty;
-	cache_ptr->slabs_empty = slab_ptr;
-	cache_ptr->slab_count++;
-}
-
-const uint8_t* generate_buffer_name(size_t size, uint32_t N) {
-	uint8_t num[3];
-	uint8_t name[8] = "name-";
-	sprintf(num, "%d", N);
-	if (N > 9) num[2] = '\0';
-	else num[1] = '\0';
-	strcat(name, num);
-	if (N > 9) name[7] = '\0';
-	else name[6] = '\0';
-	return name;
-}
-
-
-void print_buddy_ptr_list() {
+void print_buddy_free_chunk_ptr_list() {
 	for (uint32_t i = 0; i <= exp_(); i++) {
 		buddy_free_t* curr = ((buddy_free_t*)space_ + i)->free;
 		printf("%d: ", i);
@@ -541,4 +195,434 @@ void print_buddy_ptr_list() {
 		}
 		if (curr == NULL) printf("NULL!\n");
 	}
+}
+
+void kmem_init_impl(void *space, uint32_t block_num) {
+	if (space < 0 || block_num <= 0) return;
+	space_ = space;
+	block_num_ = block_num;
+
+	// racunanje broja razlicitih mogucih velicina buddy chunk-ova
+	uint16_t max_buddy_exp = 0;
+	uint16_t leftover_space_blocks;
+	while ((1 << max_buddy_exp) < block_num) max_buddy_exp++;
+
+	// offset od pocetka dodeljene memorije od kog pocinje prostor raspoloziv za buddy alokaciju
+	uint32_t offset_bytes = max_buddy_exp * sizeof(buddy_free_t);
+	
+	// inicijalizacija master cache objekta:
+	kmem_cache_init((uint8_t*)space_ + offset_bytes, "CACHES", sizeof(kmem_cache_t), NULL, NULL);
+	offset_bytes += sizeof(kmem_cache_t);
+
+	// inicijalizacija kriticne sekcije
+	//CRITICAL_SECTION* critical_section_ptr = (uint8_t*)space_ + offset_bytes;
+	//InitializeCriticalSectionAndSpinCount(critical_section_ptr, 0x00000400);
+	//offset_bytes += sizeof(CRITICAL_SECTION);
+
+	uint32_t offset_blocks = offset_bytes / BLOCK_SIZE + (offset_bytes % BLOCK_SIZE) ? 1 : 0;
+	block_num -= offset_blocks;
+	if ((1 << max_buddy_exp) > block_num) max_buddy_exp--;
+	// exp_ = free_buddy_length;
+	leftover_space_blocks = block_num - (1 << max_buddy_exp);
+
+	// avail_space_ = (uint8_t*)space + offset_blocks * BLOCK_SIZE;
+
+	// inicijalizacija listi pokazivaca na slobodne chunk-ove buddy sistema
+	for (uint32_t i = 0; i < max_buddy_exp; i++) ((buddy_free_t*)space_ + i)->free = NULL;
+	((buddy_free_t*)space_ + max_buddy_exp)->free = ((buddy_free_t*)avail_space_());
+	((buddy_free_t*)avail_space_())->free = NULL;
+
+	// cepanje memorije koja se nalazi van maksimalnog stepena dvojke za buddy sistem i azuriranje liste pokazivaca
+	// tako da pokazuju na nju
+	void* leftover_space_pointer = (uint8_t*)avail_space_() + (1 << max_buddy_exp) * BLOCK_SIZE; // kolicina preostalih blokova
+	while (leftover_space_blocks > 0) {
+		// racunanje maksimalnog eksponenta dvojke za datu kolicinu preostalih blokova
+		uint16_t exponent = 0;
+		while ((1 << exponent) < leftover_space_blocks) exponent++;
+		if ((1 << exponent) > leftover_space_blocks) exponent--;
+
+		// umanjivanje kolicine preostalih blokova
+		leftover_space_blocks -= (1 << exponent);
+
+		// azuriranje pokazivaca na slobodnu memoriju tako da pokriju date preostale blokove
+		((buddy_free_t*)leftover_space_pointer)->free = ((buddy_free_t*)space_ + exponent)->free;
+		((buddy_free_t*)space_ + exponent)->free = leftover_space_pointer;
+		leftover_space_pointer = (uint8_t*)leftover_space_pointer + (1 << exponent) * BLOCK_SIZE;
+	}
+}
+
+kmem_cache_t* kmem_cache_create_impl(const uint8_t* name, size_t size, void(*ctor)(void*), void(*dctor)(void*)) {
+	if (!name || strlen(name) > MAX_NAME_LENGTH || size < 1) return NULL;
+
+	kmem_cache_t* master_cache_ptr = master_cache_addr_;
+	void* new_cache_ptr = kmem_cache_alloc_impl(master_cache_ptr);
+	if (new_cache_ptr) kmem_cache_init(new_cache_ptr, name, size, ctor, dctor);
+	return new_cache_ptr;
+}
+
+int kmem_cache_shrink_impl(kmem_cache_t* cache_ptr) {
+	if (!cache_ptr) {
+		return 0;
+	}
+	EnterCriticalSection(&cache_ptr->critical_section);
+
+	if (cache_ptr != master_cache_addr_ && !object_in_cache(master_cache_addr_, cache_ptr, sizeof(kmem_cache_t))) {
+		LeaveCriticalSection(&cache_ptr->critical_section);
+		return;
+	}
+
+	if (cache_ptr->expanded) {
+		cache_ptr->expanded = 0;
+		LeaveCriticalSection(&cache_ptr->critical_section);
+		return 0;
+	}
+
+	int ret = 0;
+	if (cache_ptr->slabs_empty) {
+		// oslobadjanje svih praznih slab-ova
+		kmem_slab_t* slab_to_free = cache_ptr->slabs_empty;
+		while (slab_to_free) {
+			ret += kmem_slab_free(cache_ptr, slab_to_free);
+			slab_to_free = cache_ptr->slabs_empty;
+		}
+		// azuriranje procenta popunjenosti
+		update_percentage_full(cache_ptr);
+	}
+
+	LeaveCriticalSection(&cache_ptr->critical_section);
+	return ret;
+}
+
+void* kmem_cache_alloc_impl(kmem_cache_t* cache_ptr) {
+	if (!cache_ptr || (cache_ptr != master_cache_addr_ && !object_in_cache(master_cache_addr_, cache_ptr, sizeof(kmem_cache_t)))) return;
+	EnterCriticalSection(&cache_ptr->critical_section);
+
+	void* object_ptr = NULL;
+	if (cache_ptr->slabs_half_full) object_ptr = kmem_cache_alloc_obj(cache_ptr, cache_ptr->slabs_half_full); // postoji polupopunjen slab
+	else if (cache_ptr->slabs_empty) object_ptr = kmem_cache_alloc_obj(cache_ptr, cache_ptr->slabs_half_full); // postoji prazan slab
+	else { // potrebno alocirati novi slab
+		kmem_slab_t* new_slab = kmem_slab_alloc(cache_ptr);
+		if (!new_slab) {
+			LeaveCriticalSection(&cache_ptr->critical_section);
+			return NULL; // nemoguce alocirati slab trenutno
+		}
+		object_ptr = kmem_cache_alloc_obj(cache_ptr, new_slab);
+	}
+	// azuriranje procenta popunjenosti
+	if (object_ptr) update_percentage_full(cache_ptr);
+
+	LeaveCriticalSection(&cache_ptr->critical_section);
+	return object_ptr;
+}
+
+void kmem_cache_free_impl(kmem_cache_t* cache_ptr, void* object_ptr) {
+	if (!cache_ptr || !object_ptr) return;
+	if (cache_ptr != master_cache_addr_ && !object_in_cache(master_cache_addr_, cache_ptr, sizeof(kmem_cache_t))) return;
+	EnterCriticalSection(&cache_ptr->critical_section);
+
+	uint8_t found = 0;
+	// obilazak polupunih slab-ova
+	kmem_slab_t* current_half_full = cache_ptr->slabs_half_full;
+	while (current_half_full) {
+		if (object_in_slab(current_half_full, object_ptr, cache_ptr->data_size)) {
+			found = 1;
+			break;
+		}
+		current_half_full = current_half_full->next;
+	}
+
+	// obilazak punih slab-ova
+	kmem_slab_t* current_full = cache_ptr->slabs_full;
+	if (!found) {
+		while (current_full) {
+			if (object_in_slab(current_full, object_ptr, cache_ptr->data_size)) {
+				found = 2;
+				break;
+			}
+			current_full = current_full->next;
+		}
+	}
+
+	if (found == 1) { // u polupunom slab-u
+		*(void**)(object_ptr) = current_half_full->free;
+		current_half_full->free = object_ptr;
+		current_half_full->taken_count--;
+
+		if (current_half_full->taken_count == 0) { // ukoliko poslednji popunjeni slot prebacivanje u empty
+			cache_ptr->slabs_half_full = current_half_full->next;
+			current_half_full->next = cache_ptr->slabs_empty;
+			cache_ptr->slabs_empty = current_half_full;
+		}
+	}
+	else if (found == 2) { // u punom slab-u 
+		*(void**)(object_ptr) = current_full->free;
+		current_full->free = object_ptr;
+		current_full->taken_count--;
+
+		// prebacivanje slab-a u polupune
+		cache_ptr->slabs_full = current_full->next;
+		current_full->next = cache_ptr->slabs_half_full;
+		cache_ptr->slabs_half_full = current_full;
+	}
+	if (found) {
+		if (cache_ptr->dctor) cache_ptr->dctor(object_ptr); // pozivanje destruktora za oslobodjeni objekat
+		update_percentage_full(cache_ptr); // azuriranje procenta popunjenosti cache-a
+	}
+
+	LeaveCriticalSection(&cache_ptr->critical_section);
+	return;
+}
+
+void* kmalloc_impl(size_t size) {
+	uint16_t exponent = exponent_of_two(size);
+	if (exponent < 5 || exponent > 17) return NULL;
+
+	uint8_t name[10];
+	sprintf(name, "buff-%d", exponent);
+
+	kmem_cache_t* buffer_cache_ptr = search_cache_by_name(name);
+
+	if (!buffer_cache_ptr) { // ne postoji odgovarajuci cache
+		buffer_cache_ptr = kmem_cache_create_impl(name, size, NULL, NULL);
+		if (!buffer_cache_ptr) return NULL; // cache ne moze trenutno da se alocira
+	}
+
+	return kmem_cache_alloc_impl(buffer_cache_ptr);
+}
+
+void kfree_impl(const void* object_ptr) {
+	if (!object_ptr) return;
+
+	kmem_cache_t* master_cache_ptr = master_cache_addr_;
+	kmem_slab_t* master_slab_ptr = master_cache_ptr->slabs_half_full;
+	while (master_slab_ptr) {
+		for (uint16_t i = 0; i < master_slab_ptr->slot_count; i++) {
+			kmem_cache_t* current_cache = (kmem_cache_t*)((uint8_t*)(master_slab_ptr + 1) + i * master_slab_ptr->slot_size);
+			if (object_in_cache(current_cache, object_ptr, current_cache->data_size)) {
+				kmem_cache_free_impl(current_cache, object_ptr);
+				return;
+			}
+		}
+		master_slab_ptr = master_slab_ptr->next;
+	}
+	master_slab_ptr = master_cache_ptr->slabs_full;
+	while (master_slab_ptr) { // TODO - optimalnije implementirati
+		for (uint16_t i = 0; i < master_slab_ptr->slot_count; i++) {
+			kmem_cache_t* current_cache = (kmem_cache_t*)((uint8_t*)(master_slab_ptr + 1) + i * master_slab_ptr->slot_size);
+			if (object_in_cache(current_cache, object_ptr, current_cache->data_size)) {
+				kmem_cache_free_impl(current_cache, object_ptr);
+				return;
+			}
+		}
+		master_slab_ptr = master_slab_ptr->next;
+	}
+}
+
+void kmem_cache_destroy_impl(kmem_cache_t* cache_ptr) { // unistiti samo ako je prazno... TODO (ne postoji nijedna half-full ili full ploca
+	if (!cache_ptr || cache_ptr == master_cache_addr_ || !object_in_cache(master_cache_addr_, cache_ptr, sizeof(kmem_cache_t))) return;
+	EnterCriticalSection(&cache_ptr->critical_section);
+
+	if (cache_ptr->slabs_half_full || cache_ptr->slabs_full) {
+		cache_ptr->error = CACHE_NOT_EMPTY;
+		LeaveCriticalSection(&cache_ptr->critical_section);
+		return;
+	}
+
+	kmem_cache_shrink_impl(cache_ptr);
+
+	// TODO mozda wrap
+	DeleteCriticalSection(&cache_ptr->critical_section);
+	kmem_cache_free_impl(master_cache_addr_, cache_ptr);
+
+	LeaveCriticalSection(&cache_ptr->critical_section);
+}
+
+void kmem_cache_info_impl(kmem_cache_t* cache_ptr) {
+	if (!cache_ptr) return;
+	if (cache_ptr != master_cache_addr_ && !object_in_cache(master_cache_addr_, cache_ptr, sizeof(kmem_cache_t))) return;
+	EnterCriticalSection(&cache_ptr->critical_section);
+
+	printf("[*] %s:\n", cache_ptr->name);
+	printf("\tdata size [bytes] = %d\n", cache_ptr->data_size);
+	printf("\tcache size [blocks] = %d\n", cache_ptr->slab_count * cache_ptr->blocks_per_slab);
+	printf("\tslab count = %d\n", cache_ptr->slab_count);
+	printf("\tslots per slab = %d\n", cache_ptr->slots_per_slab);
+	printf("\tpercentage full = %.2f%%\n", cache_ptr->percentage_full * 100.0);
+
+	LeaveCriticalSection(&cache_ptr->critical_section);
+}
+
+int kmem_cache_error_impl(kmem_cache_t* cache_ptr) {
+	if (!cache_ptr || cache_ptr == master_cache_addr_ || !object_in_cache(master_cache_addr_, cache_ptr, sizeof(kmem_cache_t))) return 0;
+	EnterCriticalSection(&cache_ptr->critical_section);
+	uint8_t code = cache_ptr->error;
+	LeaveCriticalSection(&cache_ptr->critical_section);
+	return code;
+}
+
+void* kmem_cache_alloc_obj(kmem_cache_t* cache_ptr, kmem_slab_t* slab_ptr) {
+	void* addr = slab_ptr->free;
+	slab_ptr->free = *((void**)slab_ptr->free);
+	slab_ptr->taken_count++;
+
+	if (cache_ptr->ctor) cache_ptr->ctor(addr); // pozivanje konstruktora za alocirati objekat
+
+	if (cache_ptr->slabs_half_full == slab_ptr) { // bio slab_ptr polupun
+		if (!slab_ptr->free) { // ako je slab_ptr sada pun
+			cache_ptr->slabs_half_full = slab_ptr->next;
+			slab_ptr->next = cache_ptr->slabs_full;
+			cache_ptr->slabs_full = slab_ptr;
+		}
+	}
+	else { // slab_ptr bio prazan, sada polupun
+		cache_ptr->slabs_empty = slab_ptr->next;
+		slab_ptr->next = cache_ptr->slabs_half_full;
+		cache_ptr->slabs_half_full = slab_ptr;
+	}
+
+	return addr;
+}
+
+void kmem_cache_init(kmem_cache_t* cache_ptr, uint8_t* name, size_t data_size, void(*ctor)(void*), void(*dctor)(void*)) {
+	if (!cache_ptr || !name || data_size < 1) return;
+
+	for (uint32_t i = 0; i < strlen(name); i++) cache_ptr->name[i] = name[i];
+	cache_ptr->name[strlen(name)] = '\0';
+	cache_ptr->data_size = data_size;
+	cache_ptr->slabs_empty = NULL;
+	cache_ptr->slabs_half_full = NULL;
+	cache_ptr->slabs_full = NULL;
+	cache_ptr->ctor = ctor;
+	cache_ptr->dctor = dctor;
+	cache_ptr->expanded = 0;
+	cache_ptr->slab_count = 0;
+	cache_ptr->percentage_full = 0;
+	InitializeCriticalSectionAndSpinCount(&cache_ptr->critical_section, 0x00000400);
+
+	// racunanje velicine slab-a i broja slotova po slab-u:
+	// TODO korigovati algoritam....
+	uint16_t blocks_per_slab = 1;
+	uint32_t slots_per_slab = (blocks_per_slab * BLOCK_SIZE - sizeof(kmem_slab_t)) / data_size;
+	while (slots_per_slab < MIN_SLOTS_PER_SLAB) {
+		blocks_per_slab++;
+		slots_per_slab = (blocks_per_slab * BLOCK_SIZE - sizeof(kmem_slab_t)) / data_size;
+	}
+	cache_ptr->blocks_per_slab = blocks_per_slab;
+	cache_ptr->slots_per_slab = slots_per_slab;
+}
+
+void kmem_slab_init(kmem_slab_t* slab_ptr, kmem_cache_t* cache_ptr) {
+	// inicijalizacija polja slab-a
+	slab_ptr->slot_size = cache_ptr->data_size;
+	slab_ptr->slot_count = cache_ptr->slots_per_slab;
+	slab_ptr->taken_count = 0;
+
+	// inicijalizacija liste free
+	slab_ptr->free = slab_ptr + 1;
+	printf("velicina jednog slab-a: %d\n", sizeof(kmem_slab_t));
+	for (uint32_t i = 0; i < slab_ptr->slot_count - 1; i++) {
+		*(void**)((uint8_t*)slab_ptr->free + i * slab_ptr->slot_size) = (uint8_t*)slab_ptr->free + (i + 1) * slab_ptr->slot_size;
+	}
+	*(void**)((uint8_t*)slab_ptr->free + (slab_ptr->slot_count - 1) * slab_ptr->slot_size) = NULL;
+
+	// azuriranje listi
+	slab_ptr->next = cache_ptr->slabs_empty;
+	cache_ptr->slabs_empty = slab_ptr;
+	cache_ptr->slab_count++;
+}
+
+void* kmem_slab_alloc(kmem_cache_t* cache_ptr) {
+	kmem_slab_t* slab_ptr = kmem_buddy_alloc_mem(cache_ptr->blocks_per_slab);
+	if (!slab_ptr) { // nemoguce alocirati novi slab
+		cache_ptr->error = NO_MEMORY;
+		return NULL;
+	}
+
+	kmem_slab_init(slab_ptr, cache_ptr);
+	cache_ptr->expanded = 1;
+
+	return slab_ptr;
+}
+
+uint32_t kmem_slab_free(kmem_cache_t* cache_ptr, kmem_slab_t* slab_ptr) {
+	cache_ptr->slabs_empty = slab_ptr->next;
+	cache_ptr->slab_count--;
+	return kmem_buddy_free_mem(slab_ptr, cache_ptr->blocks_per_slab);
+}
+
+void* search_cache_by_name(const uint8_t* name) {
+	if (!name) return NULL;
+	kmem_cache_t* master_cache = master_cache_addr_;
+	kmem_slab_t* slab_ptr = master_cache->slabs_half_full;
+	while (slab_ptr) {
+		uint8_t* slot_ptr = slab_ptr + 1;
+		for (uint16_t i = 0; i < slab_ptr->slot_count; i++)
+			if (strcmp(((kmem_cache_t*)(slot_ptr + i * master_cache->data_size))->name, name) == 0) return slot_ptr + i * master_cache->data_size;
+		slab_ptr = slab_ptr->next;
+	}
+	slab_ptr = master_cache->slabs_full;
+	while (slab_ptr) {
+		uint8_t* slot_ptr = slab_ptr + 1;
+		for (uint16_t i = 0; i < slab_ptr->slot_count; i++)
+			if (strcmp(((kmem_cache_t*)(slot_ptr + i * master_cache->data_size))->name, name) == 0) return slot_ptr + i * master_cache->data_size;
+		slab_ptr = slab_ptr->next;
+	}
+
+	return NULL;
+}
+
+uint8_t object_in_cache(kmem_cache_t* cache_ptr, void* object_ptr, size_t size) {
+	if (!cache_ptr || !object_ptr) return 0;
+	if (cache_ptr->data_size != size) return 0;
+
+	kmem_slab_t* slab_ptr = cache_ptr->slabs_half_full;
+	while (slab_ptr) {
+		if (object_in_slab(slab_ptr, object_ptr, size)) return 1;
+		slab_ptr = slab_ptr->next;
+	}
+
+	slab_ptr = cache_ptr->slabs_full;
+	while (slab_ptr) {
+		if (object_in_slab(slab_ptr, object_ptr, size)) return 1;
+		slab_ptr = slab_ptr->next;
+	}
+
+	return 0;
+}
+
+uint8_t object_in_slab(kmem_slab_t* slab_ptr, void* object_ptr, size_t size) { // ne proverava se da li je zauzet doduse... mozda bi trebalo...
+	if (!slab_ptr || !object_ptr) return 0;
+	if (slab_ptr->slot_size != size) return 0;
+	if (!(object_ptr > slab_ptr && object_ptr < (uint8_t*)slab_ptr + sizeof(kmem_slab_t) + slab_ptr->slot_size * slab_ptr->slot_count)) return 0;
+	if (((uint8_t*)object_ptr - ((uint8_t*)slab_ptr + sizeof(kmem_slab_t))) % size == 0) return 1;
+	return 0;
+}
+
+void update_percentage_full(kmem_cache_t* cache_ptr) {
+	uint16_t slots_taken = 0;
+	
+	kmem_slab_t* half_full_slab_ptr = cache_ptr->slabs_half_full;
+	while (half_full_slab_ptr) {
+		slots_taken += half_full_slab_ptr->taken_count;
+		half_full_slab_ptr = half_full_slab_ptr->next;
+	}
+
+	kmem_slab_t* full_slab_ptr = cache_ptr->slabs_full;
+	while (full_slab_ptr) {
+		slots_taken += full_slab_ptr->taken_count;
+		full_slab_ptr = full_slab_ptr->next;
+	}
+
+	cache_ptr->percentage_full = slots_taken * 1.0 / ((uint64_t)cache_ptr->slab_count * cache_ptr->slots_per_slab);
+}
+
+uint8_t exponent_of_two(size_t size) {
+	if (size < 1) return -1;
+
+	uint8_t valid = 0;
+	uint16_t exponent = 0;
+	for (exponent; (1 << exponent) <= size ; exponent++)
+		if (size == (1 << exponent)) return exponent;
+
+	return -1;
 }

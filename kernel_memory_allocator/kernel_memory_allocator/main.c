@@ -5,7 +5,7 @@
 #include "slab.h"
 #include "test.h"
 
-#define BLOCK_NUMBER (1025)
+#define BLOCK_NUMBER (1024)
 #define THREAD_NUM (5)
 #define ITERATIONS (1000)
 
@@ -86,11 +86,46 @@ int main() {
 
 	kmem_cache_destroy(shared);
 	free(space);*/
-	void* addr = kmem_buddy_alloc_mem(2);
-	printf("adresa dodeljene memorije: %p\n", addr);
 
-	kmem_buddy_dealloc_mem(addr, 2);
+	//void* addr = kmem_buddy_alloc_mem(2);
+	//printf("adresa dodeljene memorije: %p\n", addr);
+
+	/*kmem_buddy_dealloc_mem(addr, 2);
 	printf("\n");
-	print_buddy_ptr_list();
+	print_buddy_free_ptr_list();*/
+
+	kmem_cache_t* cache = kmem_cache_create("cache-test", 16, NULL, NULL);
+	printf("cache addr: %p\n", cache);
+	kmem_cache_info(cache);
+	printf("master cache addr: %p\n", master_cache_addr_);
+	kmem_cache_info(master_cache_addr_);
+
+	void* object = kmem_cache_alloc(cache);
+	printf("adresa alociranog objekta: %p\n", object);
+//	generate_buffer_name(11);
+
+	void* buffer = kmalloc(1024);
+	printf("buffer addr: %p\n", buffer);
+
+	//kmem_cache_t* cache1 = search_by_cache_name(master_cache_, "cache-test");
+	//printf("cache1 addr: %p\n", cache1);
+
+	kmem_cache_t* buff_10 = search_cache_by_name(master_cache_addr_, "buff-10");
+	printf("buff1 addr: %p\n", buff_10);
+	//kmem_cache_info(buff1);
+	void* buffers_10[107];
+	for (int i = 1; i < 68; i++) {
+		buffers_10[i] = kmalloc(1024);
+	}
+	kmem_cache_info(buff_10);
+
+	// kmem_cache_free(buff_10, buffers_10[67]);
+	kfree(buffers_10[67]);
+	kmem_cache_info(buff_10);
+
+	kmem_cache_shrink(buff_10);
+	kmem_cache_shrink(buff_10);
+
+	kmem_cache_info(buff_10);
 	return 0;
 }
