@@ -426,7 +426,7 @@ void kfree_impl(const void* object_ptr) {
 	kmem_slab_t* master_slab_ptr = master_cache_ptr->slabs_half_full;
 	while (master_slab_ptr) {
 		for (uint16_t i = 0; i < master_slab_ptr->slot_count; i++) {
-			kmem_cache_t* current_cache = (kmem_cache_t*)((uint8_t*)(master_slab_ptr + 1) + i * master_slab_ptr->slot_size);
+			kmem_cache_t* current_cache = (kmem_cache_t*)((uint8_t*)(master_slab_ptr + 1) + master_slab_ptr->L1_offset + i * master_slab_ptr->slot_size);
 			if ((*(uint8_t*)current_cache != SLOT_FREE) &&  object_in_cache(current_cache, object_ptr, current_cache->data_size)) {
 				kmem_cache_free_impl(current_cache, object_ptr);
 				return;
@@ -437,7 +437,7 @@ void kfree_impl(const void* object_ptr) {
 	master_slab_ptr = master_cache_ptr->slabs_full;
 	while (master_slab_ptr) {
 		for (uint16_t i = 0; i < master_slab_ptr->slot_count; i++) {
-			kmem_cache_t* current_cache = (kmem_cache_t*)((uint8_t*)(master_slab_ptr + 1) + i * master_slab_ptr->slot_size);
+			kmem_cache_t* current_cache = (kmem_cache_t*)((uint8_t*)(master_slab_ptr + 1) + master_slab_ptr->L1_offset + i * master_slab_ptr->slot_size);
 			if (object_in_cache(current_cache, object_ptr, current_cache->data_size)) {
 				kmem_cache_free_impl(current_cache, object_ptr);
 				return;
@@ -474,7 +474,8 @@ void kmem_cache_info_impl(kmem_cache_t* cache_ptr) {
 	printf("\tcache size [blocks] = %d\n", cache_ptr->slab_count * cache_ptr->blocks_per_slab);
 	printf("\tslab count = %d\n", cache_ptr->slab_count);
 	printf("\tslots per slab = %d\n", cache_ptr->slots_per_slab);
-	printf("\tblocks per slab = %d\n", cache_ptr->blocks_per_slab);
+	printf("\tblocks per slab = %d\n", cache_ptr->blocks_per_slab); // TODO obrisati
+	printf("\tnext L1 offset = %d\n", cache_ptr->next_L1_offset); // TODO obrisati
 	printf("\tpercentage full = %.2f%%\n", cache_ptr->percentage_full * 100.0);
 
 	LeaveCriticalSection(&cache_ptr->critical_section);
@@ -535,10 +536,6 @@ void* kmem_cache_alloc_obj(kmem_cache_t* cache_ptr, kmem_slab_t* slab_ptr) {
 	return addr;
 }
 
-void kmem_cache_free_obj(void* object_ptr, kmem_slab_t* slab_ptr, kmem_slab_t* slabs) {
-
-}
-
 void kmem_cache_init(kmem_cache_t* cache_ptr, uint8_t* name, size_t data_size, void(*ctor)(void*), void(*dctor)(void*)) {
 	if (!cache_ptr || !name || data_size < 1) return;
 
@@ -554,6 +551,7 @@ void kmem_cache_init(kmem_cache_t* cache_ptr, uint8_t* name, size_t data_size, v
 	cache_ptr->slab_count = 0;
 	cache_ptr->percentage_full = 0;
 	InitializeCriticalSectionAndSpinCount(&cache_ptr->critical_section, 0x00000400);
+	cache_ptr->next_L1_offset = 0;
 	cache_ptr->error = NO_ERROR;
 
 	// racunanje velicine slab-a i broja slotova po slab-u:
@@ -593,14 +591,21 @@ void kmem_slab_init(kmem_slab_t* slab_ptr, kmem_cache_t* cache_ptr) {
 	slab_ptr->slot_count = cache_ptr->slots_per_slab;
 	slab_ptr->taken_count = 0;
 
+	// postavljanje L1 offset-a za dati slab
+	slab_ptr->L1_offset = cache_ptr->next_L1_offset;
+
+	// azuriranje L1 offset-a za sledeci slab datog cache-a
+	if (cache_ptr->next_L1_offset + CACHE_L1_LINE_SIZE > (cache_ptr->blocks_per_slab * BLOCK_SIZE - sizeof(kmem_slab_t) - cache_ptr->data_size * cache_ptr->slots_per_slab))
+		cache_ptr->next_L1_offset = 0;
+	else cache_ptr->next_L1_offset = cache_ptr->next_L1_offset + CACHE_L1_LINE_SIZE;
+
 	// inicijalizacija liste free
 	//slab_ptr->free = slab_ptr + 1;
 
-	uint8_t* slot_ptr = slab_ptr + 1;
-	for (uint32_t i = 0; i < slab_ptr->slot_count/* - 1*/; i++) {
-		/**(void**)*/*(slot_ptr + i * slab_ptr->slot_size) = SLOT_FREE;/*(uint8_t*)slab_ptr->free + (i + 1) * slab_ptr->slot_size;*/
+	uint8_t* slot_ptr = (uint8_t*)(slab_ptr + 1) + slab_ptr->L1_offset;
+	for (uint32_t i = 0; i < slab_ptr->slot_count; i++) {
+		*(slot_ptr + i * slab_ptr->slot_size) = SLOT_FREE;
 	}
-	//*(void**)((uint8_t*)slab_ptr->free + (slab_ptr->slot_count - 1) * slab_ptr->slot_size) = NULL;
 
 	// azuriranje listi
 	slab_ptr->next = cache_ptr->slabs_empty;
@@ -632,14 +637,14 @@ void* search_cache_by_name(const uint8_t* name) {
 	kmem_cache_t* master_cache = master_cache_addr_;
 	kmem_slab_t* slab_ptr = master_cache->slabs_half_full;
 	while (slab_ptr) {
-		uint8_t* slot_ptr = slab_ptr + 1;
+		uint8_t* slot_ptr = (uint8_t*)(slab_ptr + 1) + slab_ptr->L1_offset;
 		for (uint16_t i = 0; i < slab_ptr->slot_count; i++)
 			if (strcmp(((kmem_cache_t*)(slot_ptr + i * master_cache->data_size))->name, name) == 0) return slot_ptr + i * master_cache->data_size;
 		slab_ptr = slab_ptr->next;
 	}
 	slab_ptr = master_cache->slabs_full;
 	while (slab_ptr) {
-		uint8_t* slot_ptr = slab_ptr + 1;
+		uint8_t* slot_ptr = (uint8_t*)(slab_ptr + 1) + slab_ptr->L1_offset;
 		for (uint16_t i = 0; i < slab_ptr->slot_count; i++)
 			if (strcmp(((kmem_cache_t*)(slot_ptr + i * master_cache->data_size))->name, name) == 0) return slot_ptr + i * master_cache->data_size;
 		slab_ptr = slab_ptr->next;
@@ -678,8 +683,8 @@ uint8_t object_in_cache(kmem_cache_t* cache_ptr, void* object_ptr, size_t size) 
 uint8_t object_in_slab(kmem_slab_t* slab_ptr, void* object_ptr, size_t size) {
 	if (!slab_ptr || !object_ptr) return 0;
 	if (slab_ptr->slot_size != size) return 0;
-	if (!(object_ptr > slab_ptr && object_ptr < (uint8_t*)slab_ptr + sizeof(kmem_slab_t) + slab_ptr->slot_size * slab_ptr->slot_count)) return 0;
-	if (((uint8_t*)object_ptr - ((uint8_t*)slab_ptr + sizeof(kmem_slab_t))) % size == 0) return 1;
+	if (!(object_ptr > slab_ptr && object_ptr < (uint8_t*)slab_ptr + sizeof(kmem_slab_t) + slab_ptr->L1_offset + slab_ptr->slot_size * slab_ptr->slot_count)) return 0;
+	if (((uint8_t*)object_ptr - ((uint8_t*)slab_ptr + sizeof(kmem_slab_t) + slab_ptr->L1_offset)) % size == 0) return 1;
 	return 0;
 }
 
@@ -702,7 +707,7 @@ void update_percentage_full(kmem_cache_t* cache_ptr) {
 }
 
 void* kmem_slab_find_free_slot(kmem_slab_t* slab_ptr) {
-	uint8_t* slot_ptr = slab_ptr + 1;
+	uint8_t* slot_ptr = (uint8_t*)(slab_ptr + 1) + slab_ptr->L1_offset;
 	for (uint16_t i = 0; i < slab_ptr->slot_count; i++) {
 		if (*(slot_ptr + i * slab_ptr->slot_size) == SLOT_FREE) return slot_ptr + i * slab_ptr->slot_size;
 	}

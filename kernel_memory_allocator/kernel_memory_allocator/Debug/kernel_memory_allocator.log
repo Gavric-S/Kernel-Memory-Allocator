@@ -1,5 +1,55 @@
-﻿  main.c
+﻿  buddy.c
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.h(18,1): warning C4005: 'NO_ERROR': macro redefinition
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0\shared\winerror.h(223): message : see previous definition of 'NO_ERROR'
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(6,30): warning C4018: '<': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(8,27): warning C4018: '>': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(14,30): warning C4018: '<': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(24,25): warning C4018: '<': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(30,28): warning C4244: 'function': conversion from 'uint16_t' to 'uint8_t', possible loss of data
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(35,28): warning C4244: 'function': conversion from 'uint16_t' to 'uint8_t', possible loss of data
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(47,25): warning C4018: '<': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(61,35): warning C4244: 'function': conversion from 'uint16_t' to 'uint8_t', possible loss of data
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(63,67): warning C4244: 'function': conversion from 'uint16_t' to 'uint8_t', possible loss of data
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(112,41): warning C4018: '<': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(122,18): warning C4018: '>': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(122,48): warning C4018: '>=': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(124,88): warning C4554: '<<': check operator precedence for possible error; use parentheses to clarify precedence
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(124,1): warning C4133: 'initializing': incompatible types - from 'uint8_t *' to 'buddy_free_t *'
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(208,30): warning C4018: '<': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(214,49): warning C4133: 'function': incompatible types - from 'uint8_t *' to 'kmem_cache_t *'
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(225,27): warning C4018: '>': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(218,1): warning C4133: 'initializing': incompatible types - from 'uint8_t *' to 'CRITICAL_SECTION *'
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(260,40): warning C4133: 'function': incompatible types - from 'uint8_t *' to 'LPCRITICAL_SECTION'
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(267,40): warning C4133: 'function': incompatible types - from 'uint8_t *' to 'LPCRITICAL_SECTION'
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(279,3): warning C4033: 'kmem_cache_shrink_impl' must return a value
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(305,128): warning C4033: 'kmem_cache_alloc_impl' must return a value
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(407,40): warning C4133: 'function': incompatible types - from 'uint8_t *' to 'LPCRITICAL_SECTION'
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(409,40): warning C4133: 'function': incompatible types - from 'uint8_t *' to 'LPCRITICAL_SECTION'
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(430,93): warning C4090: 'function': different 'const' qualifiers
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(431,51): warning C4090: 'function': different 'const' qualifiers
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(441,49): warning C4090: 'function': different 'const' qualifiers
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(442,51): warning C4090: 'function': different 'const' qualifiers
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(539,56): warning C4028: formal parameter 2 different from declaration
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(598,53): warning C4018: '>': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(686,30): warning C4133: '>': incompatible types - from 'kmem_slab_t *' to 'void *'
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(686,153): warning C4133: '<': incompatible types - from 'uint8_t *' to 'void *'
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(706,112): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(742,25): warning C4018: '<': signed/unsigned mismatch
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(743,17): warning C4244: 'return': conversion from 'uint16_t' to 'uint8_t', possible loss of data
+  main.c
 D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.h(18,1): warning C4005: 'NO_ERROR': macro redefinition
 C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0\shared\winerror.h(223): message : see previous definition of 'NO_ERROR'
 D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\main.c(23,20): warning C4018: '<': signed/unsigned mismatch
+  slab.c
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.h(18,1): warning C4005: 'NO_ERROR': macro redefinition
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0\shared\winerror.h(223): message : see previous definition of 'NO_ERROR'
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\slab.c(4,22): warning C4142: 'block_num_': benign redefinition of type
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.h(24): message : see declaration of 'block_num_'
+  test.c
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.h(18,1): warning C4005: 'NO_ERROR': macro redefinition
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0\shared\winerror.h(223): message : see previous definition of 'NO_ERROR'
+  Generating Code...
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\slab.c(32): warning C4716: 'kmalloc': must return a value
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(302): warning C4715: 'kmem_cache_shrink_impl': not all control paths return a value
+D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\buddy.c(324): warning C4715: 'kmem_cache_alloc_impl': not all control paths return a value
   kernel_memory_allocator.vcxproj -> D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\Debug\kernel_memory_allocator.exe

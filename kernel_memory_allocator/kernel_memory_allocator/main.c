@@ -71,8 +71,8 @@ void work(void* pdata) {
 		kmem_cache_free(objs[i].cache, objs[i].data);
 	}
 
-	//kmem_cache_t* buff = search_cache_by_name("buff-13");
-	//kmem_cache_info(buff);
+	kmem_cache_t* buff = search_cache_by_name("buff-13");
+	kmem_cache_info(buff);
 	kfree(objs);
 	kmem_cache_destroy(cache);
 }
@@ -81,12 +81,14 @@ int main() {
 	void *space = malloc(BLOCK_SIZE * BLOCK_NUMBER);
 	kmem_init(space, BLOCK_NUMBER);
 
+	printf("velicina slab-a: %d\n", sizeof(kmem_slab_t));
+
 	kmem_cache_t *shared = kmem_cache_create("shared object", shared_size, construct, NULL);
 
 	struct data_s data;
 	data.shared = shared;
 	data.iterations = ITERATIONS;
-	run_threads(work, &data, 200);
+	run_threads(work, &data, 5);
 
 	kmem_cache_destroy(shared);
 	free(space);

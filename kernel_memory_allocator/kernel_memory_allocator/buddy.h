@@ -41,6 +41,7 @@ typedef struct kmem_slab_s { // slab
 	uint32_t slot_count; // broj slot-ova
 	uint32_t taken_count; // broj zauzetih slot-ova
 /*	void* free;*/ // problem oko slucaja kada je sama velicina free pokazivaca veca od slot-a moze se resiti tako sto bi min slot_size bio 4B
+	uint16_t L1_offset;
 	struct kmem_slab_s* next; // sledeci slab
 } kmem_slab_t;
 
@@ -61,6 +62,8 @@ typedef struct kmem_cache_s { // cache
 	uint16_t blocks_per_slab; // broj blokova koje jedan slab zauzima
 	uint32_t slots_per_slab; // broj slotova po slab-u
 	float percentage_full; // trenutni procenat popunjenosti cache-a
+
+	uint16_t next_L1_offset;
 
 	uint8_t error; // kod poslednje greske prilikom rada sa cache-om
 
@@ -110,8 +113,6 @@ int kmem_cache_error_impl(kmem_cache_t*);
 /* cache i slab funkcije */
 // alokacija objekta u datom slab-u datog cache-a
 void* kmem_cache_alloc_obj(kmem_cache_t*, kmem_slab_t*);
-// alokacija objekta u datom slab-u datog cache-a
-void kmem_cache_free_obj(void*, kmem_slab_t*, kmem_slab_t*);
 // inicijalizacija cache-a
 void kmem_cache_init(kmem_cache_t*, const uint8_t*, size_t, void(*)(void *), void(*)(void *));
 // inicijalizacija slab-a
