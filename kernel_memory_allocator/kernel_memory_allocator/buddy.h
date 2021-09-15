@@ -11,7 +11,7 @@
 /* simbolicke konstante */
 #define MAX_NAME_LENGTH 30
 #define MIN_SLOTS_PER_SLAB 64
-#define SLOT_FREE 170
+#define SLOT_FREE (170)
 #define SLOT_TAKEN 85
 
 // kodovi gresaka
@@ -24,7 +24,7 @@ void* space_; // pocetak prostora za kmem allocator
 uint32_t block_num_; // velicina prostora za kmem allocator u blokovima
 
 // adresa cache-a cache-eva
-#define master_cache_addr_ (kmem_cache_t*)((buddy_free_t*)space_ + exp_(block_num_) + 1)
+#define master_cache_addr_ ((kmem_cache_t*)((buddy_free_t*)space_ + exp_(block_num_) + 1))
 // objekat kriticne sekcije
 #define critical_section_ ((uint8_t*)((buddy_free_t*)space_ + exp_(block_num_) + 1) + sizeof(kmem_cache_t))
 
@@ -78,11 +78,11 @@ uint32_t kmem_buddy_free_mem(void*, uint32_t);
 // pronalazak prvog eksponenta za koga postoje slobodni chunk-ovi u buddy sistemu
 uint8_t found_free_space(uint16_t exponent, uint16_t*);
 // racunanje offset-a date adrese od pocetka prostora u bajtovima
-uint32_t offset_bytes(void*);
+uint32_t addr_offset_bytes(void*);
 // da li je dati buddy chunk u okviru memorije
 uint8_t chunk_is_in_bounds(void*, uint32_t);
 // da li je dati buddy chunk validan
-uint8_t chunk_buddy_is_valid(void*, uint32_t);
+uint8_t chunk_is_valid(void*, uint32_t);
 // direktna alokacija chunk-a
 void* direct_alloc(uint8_t, uint32_t);
 // alokacija sa cepanjem chunk-ova
