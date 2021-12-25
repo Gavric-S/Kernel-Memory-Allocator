@@ -5,7 +5,7 @@
 #include "slab.h"
 #include "test.h"
 
-#define BLOCK_NUMBER (3300)
+#define BLOCK_NUMBER (1024)
 #define THREAD_NUM (5)
 #define ITERATIONS (1000)
 
@@ -38,51 +38,35 @@ void work(void* pdata) {
 	char buffer[1024];
 	int size = 0;
 	sprintf_s(buffer, 1024, "thread cache %d", data.id);
-	printf("nit %d alocira prvi put\n", data.id);
 	kmem_cache_t *cache = kmem_cache_create(buffer, data.id, 0, 0);
-	printf("nit %d prosla prvi put\n", data.id);
 
-	//printf("pravim objs, id = %d\n", data.id);
 	struct objects_s *objs = (struct objects_s*)(kmalloc(sizeof(struct objects_s) * data.iterations));
 
 	for (int i = 0; i < data.iterations; i++) {
-		printf("nit: %d alocira %d-ti put\n", data.id, i);
 		if (i % 100 == 0) {
 			objs[size].data = kmem_cache_alloc(data.shared);
 			objs[size].cache = data.shared;
 			assert(check(objs[size].data, shared_size));
 		}
-		//else if (i != 0 && i % 50 == 0) {
-		//	kmem_cache_info(cache); kmem_cache_info(data.shared);
-		//}
 		else {
 			objs[size].data = kmem_cache_alloc(cache);
 			objs[size].cache = cache;
 			memset(objs[size].data, MASK, data.id);
 		}
-		//printf("nit: %d; iteracija: %d\n", data.id, i);
 		size++;
-		printf("nit: %d prosla %d-ti put\n", data.id, i);
 	}
 
 	kmem_cache_info(cache);
 	kmem_cache_info(data.shared);
 	
-	printf("oslobadjanje objekata nit: %d\n", data.id);
 	for (int i = 0; i < size; i++) {
 		assert(check(objs[i].data, (cache == objs[i].cache) ? data.id : shared_size));
 		kmem_cache_free(objs[i].cache, objs[i].data);
 	}
-	printf("oslobadjanje objekata nit: %d USPESNO\n", data.id);
 
-	//kmem_cache_t* buff = search_cache_by_name("buff-13");
-	//kmem_cache_info(buff);
-	printf("oslobadjanje bafera nit %d\n", data.id);
 	kfree(objs);
-	printf("oslobadjanje bafera nit %d USPESNO\n", data.id);
-	printf("BRISANJE: %s\n", cache->name);
+	
 	kmem_cache_destroy(cache);
-	printf("OBRISANO: %s\n", cache->name);
 }
 
 int main() {
@@ -94,24 +78,10 @@ int main() {
 	struct data_s data;
 	data.shared = shared;
 	data.iterations = ITERATIONS;
-	run_threads(work, &data, 150);
+	run_threads(work, &data, THREAD_NUM);
 
 	kmem_cache_destroy(shared);
 	free(space);
-
-	/* ************************ */
-
-	//void* space = malloc(BLOCK_SIZE * BLOCK_NUMBER);
-	//kmem_init(space, BLOCK_NUMBER);
-
-	//kmem_cache_t* shared = kmem_cache_create("shared object", shared_size, construct, NULL);
-
-	//struct data_s data;
-	//data.id = 1;
-	//data.shared = shared;
-	//data.iterations = ITERATIONS;
-
-	//work(&data);
 
 	return 0;
 }

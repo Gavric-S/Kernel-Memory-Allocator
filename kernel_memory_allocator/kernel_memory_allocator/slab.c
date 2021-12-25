@@ -3,7 +3,7 @@
 extern void* space_;
 extern int block_num_;
 
-inline unsigned int _get_block_(char* subj) { // TODO: sva prilika da je ovo zastarelo..
+inline unsigned int _get_block_(char* subj) {
 	return (subj - (char*)space_) / BLOCK_SIZE;
 }
 
