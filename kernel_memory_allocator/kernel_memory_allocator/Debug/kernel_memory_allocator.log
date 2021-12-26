@@ -1,3 +1,0 @@
-﻿  main.c
-D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\kernel_memory_allocator\main.c(23,20): warning C4018: '<': signed/unsigned mismatch
-  kernel_memory_allocator.vcxproj -> D:\fakultet\treca godina\prvi semestar\os2\kernel_memory_allocator\kernel_memory_allocator\Debug\kernel_memory_allocator.exe
